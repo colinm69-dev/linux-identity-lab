@@ -1,0 +1,2 @@
+# Members of the AD group linux-admins may use sudo.
+%linux-admins ALL=(ALL:ALL) ALL

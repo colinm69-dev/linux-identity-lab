@@ -1,0 +1,55 @@
+---
+# Disposable identity lab: a Samba Active Directory domain controller and a
+# Linux client joined to it with SSSD + PAM. Demo credentials only.
+name: linux-identity-lab
+
+services:
+  dc:
+    build: ./dc
+    hostname: dc
+    domainname: lab.example
+    environment:
+      LAB_REALM: ${LAB_REALM:-LAB.EXAMPLE}
+      LAB_DOMAIN: ${LAB_DOMAIN:-LAB}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Lab-Admin-Passw0rd!}
+      USER_PASSWORD: ${USER_PASSWORD:-Lab-User-Passw0rd!}
+    volumes:
+      - samba-etc:/etc/samba
+      - samba-data:/var/lib/samba
+    networks:
+      lab:
+        ipv4_address: 172.28.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/lib/samba/.lab-ready && smbclient -L localhost -N >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  client:
+    build: ./client
+    hostname: client
+    domainname: lab.example
+    dns:
+      - 172.28.0.10
+    environment:
+      LAB_REALM: ${LAB_REALM:-LAB.EXAMPLE}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Lab-Admin-Passw0rd!}
+    depends_on:
+      dc:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:2222:22"  # SSH to the client, reachable from this machine only
+    networks:
+      lab:
+        ipv4_address: 172.28.0.20
+
+networks:
+  lab:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  samba-etc:
+  samba-data:

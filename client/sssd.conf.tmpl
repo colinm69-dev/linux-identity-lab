@@ -1,0 +1,36 @@
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = lab.example
+
+[nss]
+filter_groups = root
+filter_users = root
+
+[pam]
+
+[domain/lab.example]
+id_provider = ad
+auth_provider = ad
+access_provider = ad
+chpass_provider = ad
+
+ad_domain = lab.example
+krb5_realm = LAB.EXAMPLE
+ad_hostname = client.lab.example
+ad_server = dc.lab.example
+
+# Posix attributes are derived from the AD SID, so no uidNumber/gidNumber is needed.
+ldap_id_mapping = True
+use_fully_qualified_names = False
+fallback_homedir = /home/%u
+default_shell = /bin/bash
+cache_credentials = True
+krb5_ccname_template = FILE:/tmp/krb5cc_%U
+
+# Only members of linux-users may log in (carol is deliberately excluded).
+ad_access_filter = (memberOf=CN=linux-users,OU=Groups,__BASE_DN__)
+
+# Samba AD does not serve full Windows GPOs, and dynamic DNS is out of scope here.
+ad_gpo_access_control = disabled
+dyndns_update = False
